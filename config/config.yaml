@@ -1,7 +1,7 @@
 # Academic RAG Pipeline Configuration
 
 # PDF Library
-pdf_library_path: "/path/to/your/pdfs"  # CHANGE THIS to your PDF directory
+pdf_library_path: "/Users/joe/Downloads/pdfs"  # CHANGE THIS to your PDF directory
 
 # Database
 lancedb_path: "./data/lancedb"

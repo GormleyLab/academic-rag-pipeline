@@ -8,10 +8,11 @@ from typing import Optional
 from dataclasses import dataclass
 
 from docling.document_converter import DocumentConverter
-from docling_core.transforms.chunker import HybridChunker
+from docling.chunking import HybridChunker
 from docling_core.types.doc import DoclingDocument, PictureItem, TableItem
 
 from src.utils import setup_logger
+from src.tokenizer import OpenAITokenizerWrapper
 
 
 logger = setup_logger(__name__)
@@ -55,9 +56,15 @@ class DocumentProcessor:
         # Initialize Docling converter
         self.converter = DocumentConverter()
 
+        # Initialize tokenizer wrapper for OpenAI
+        tokenizer = OpenAITokenizerWrapper(
+            model_name="cl100k_base",  # Encoding for text-embedding-3-large
+            max_length=max_chunk_tokens
+        )
+
         # Initialize chunker
         self.chunker = HybridChunker(
-            tokenizer=embedding_model,
+            tokenizer=tokenizer,
             max_tokens=max_chunk_tokens
         )
 
