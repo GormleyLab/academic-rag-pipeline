@@ -192,3 +192,18 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Academic RAG Pipeline specific
+# Exclude data directory (contains PDFs and database)
+data/lancedb/
+data/pdfs/
+data/logs/
+
+# Exclude generated bibliography files
+*.bib
+
+# Exclude environment file (contains API keys)
+.env
+
+# Exclude Claude Desktop config (contains API keys)
+config/claude_desktop_config.json

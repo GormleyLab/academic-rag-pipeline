@@ -1,0 +1,30 @@
+# Academic RAG Pipeline Configuration
+
+# PDF Library
+pdf_library_path: "/path/to/your/pdfs"  # CHANGE THIS to your PDF directory
+
+# Database
+lancedb_path: "./data/lancedb"
+vector_dimension: 3072
+
+# Embeddings
+embedding_model: "text-embedding-3-large"
+openai_api_key: ""  # Set via OPENAI_API_KEY environment variable
+batch_size: 100
+
+# Chunking
+chunking_strategy: "hybrid"
+max_chunk_tokens: 1000
+chunk_overlap: 150
+
+# Metadata
+crossref_api_url: "https://api.crossref.org/works"
+crossref_email: ""  # Set via CROSSREF_EMAIL environment variable (optional but recommended)
+
+# MCP Server
+server_name: "academic-rag"
+log_level: "INFO"
+
+# Bibliography
+default_bib_output: "./references.bib"
+bibtex_entry_type: "article"  # Default if unknown
