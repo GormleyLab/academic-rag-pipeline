@@ -31,6 +31,39 @@ class OpenAITokenizerWrapper(PreTrainedTokenizerBase):
     def _tokenize(self, text: str) -> List[str]:
         return self.tokenize(text)
 
+    def encode(self, text: str, add_special_tokens: bool = True, **kwargs) -> List[int]:
+        """
+        Encode text into token IDs.
+
+        Args:
+            text: Text to encode
+            add_special_tokens: Whether to add special tokens (ignored for tiktoken)
+            **kwargs: Additional arguments (ignored)
+
+        Returns:
+            List of token IDs
+        """
+        return self.tokenizer.encode(text)
+
+    def encode_plus(self, text: str, add_special_tokens: bool = True, **kwargs) -> Dict:
+        """
+        Encode text into token IDs with additional information.
+
+        Args:
+            text: Text to encode
+            add_special_tokens: Whether to add special tokens (ignored for tiktoken)
+            **kwargs: Additional arguments (ignored)
+
+        Returns:
+            Dictionary with 'input_ids' key containing token IDs
+        """
+        input_ids = self.tokenizer.encode(text)
+        return {"input_ids": input_ids, "attention_mask": [1] * len(input_ids)}
+
+    def _encode_plus(self, text: str, **kwargs) -> Dict:
+        """Internal method called by encode_plus."""
+        return self.encode_plus(text, **kwargs)
+
     def _convert_token_to_id(self, token: str) -> int:
         return int(token)
 

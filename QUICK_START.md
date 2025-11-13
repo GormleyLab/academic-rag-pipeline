@@ -45,7 +45,7 @@ Add:
 {
   "mcpServers": {
     "academic-rag": {
-      "command": "python",
+      "command": "/FULL/PATH/TO/academic-rag-pipeline/.venv/Scripts/python.exe",
       "args": ["/FULL/PATH/TO/academic-rag-pipeline/src/mcp_server.py"],
       "env": {
         "PYTHONPATH": "/FULL/PATH/TO/academic-rag-pipeline",
@@ -57,7 +57,9 @@ Add:
 }
 ```
 
-Replace `/FULL/PATH/TO/` with your actual path!
+**Important:** Replace `/FULL/PATH/TO/` with your actual path!
+- **Windows:** Use `.venv/Scripts/python.exe`
+- **macOS/Linux:** Use `.venv/bin/python`
 
 ## 6. Restart Claude Desktop
 

@@ -74,7 +74,7 @@ This will:
 {
   "mcpServers": {
     "academic-rag": {
-      "command": "python",
+      "command": "/absolute/path/to/academic-rag-pipeline/.venv/Scripts/python.exe",
       "args": [
         "/absolute/path/to/academic-rag-pipeline/src/mcp_server.py"
       ],
@@ -89,6 +89,8 @@ This will:
 ```
 
 **Important:** Replace `/absolute/path/to/academic-rag-pipeline` with the actual full path to your project directory.
+- **Windows:** Use `.venv/Scripts/python.exe` in the command path
+- **macOS/Linux:** Use `.venv/bin/python` in the command path
 
 3. **Restart Claude Desktop** for changes to take effect.
 

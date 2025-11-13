@@ -283,7 +283,7 @@ A RAG (Retrieval Augmented Generation) pipeline that:
 {
   "mcpServers": {
     "academic-rag": {
-      "command": "python",
+      "command": "/path/to/project/.venv/Scripts/python.exe",
       "args": ["/path/to/mcp_server.py"],
       "env": {
         "PYTHONPATH": "/path/to/project",
@@ -293,6 +293,7 @@ A RAG (Retrieval Augmented Generation) pipeline that:
   }
 }
 ```
+**Note:** Use `.venv/Scripts/python.exe` on Windows, `.venv/bin/python` on macOS/Linux.
 
 **FR-2.2: Tool: search_papers**
 - **Description:** Search the paper database for relevant content
@@ -1015,7 +1016,7 @@ CROSSREF_EMAIL=your.email@university.edu
 {
   "mcpServers": {
     "academic-rag": {
-      "command": "python",
+      "command": "/Users/adam/academic-rag-pipeline/.venv/bin/python",
       "args": [
         "/Users/adam/academic-rag-pipeline/src/mcp_server.py"
       ],
@@ -1028,6 +1029,7 @@ CROSSREF_EMAIL=your.email@university.edu
   }
 }
 ```
+**Note:** Use `.venv/Scripts/python.exe` on Windows, `.venv/bin/python` on macOS/Linux.
 
 ### Appendix D: Example Workflows
 
