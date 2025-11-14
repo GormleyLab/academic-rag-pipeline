@@ -34,7 +34,29 @@ python scripts/initial_setup.py
 
 Expected: ~2 minutes per paper, ~$0.015 per paper
 
-## 5. Configure Claude Desktop (2 min)
+## 5. Test MCP Server (Optional - 2 min)
+
+Before configuring Claude Desktop, you can test your MCP server locally using the MCP Inspector:
+
+```bash
+# Install MCP Inspector (one-time setup)
+npm install -g @modelcontextprotocol/inspector
+
+# Run the inspector from the src folder
+cd src
+npx @modelcontextprotocol/inspector python mcp_server.py
+```
+
+The inspector will:
+- Start a local web server (usually on `http://localhost:6274`)
+- Automatically open in your browser
+- Let you test all 6 MCP tools interactively
+
+**To stop the inspector:** Press `Ctrl+C` in the terminal
+
+This is helpful for debugging before connecting to Claude Desktop!
+
+## 6. Configure Claude Desktop (2 min)
 
 Edit Claude Desktop config:
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -61,11 +83,11 @@ Add:
 - **Windows:** Use `.venv/Scripts/python.exe`
 - **macOS/Linux:** Use `.venv/bin/python`
 
-## 6. Restart Claude Desktop
+## 7. Restart Claude Desktop
 
 Quit and reopen Claude Desktop app.
 
-## 7. Test It! (30 sec)
+## 8. Test It! (30 sec)
 
 In Claude Desktop, try:
 ```
