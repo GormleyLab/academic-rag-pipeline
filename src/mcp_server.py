@@ -20,7 +20,7 @@ from src.metadata_extractor import MetadataExtractor
 from src.embeddings import EmbeddingGenerator
 from src.vector_store import VectorStore
 from src.bibliography import BibliographyManager, BibliographyEntry
-from src.utils import setup_logger, compute_file_hash
+from src.utils import setup_logger, compute_file_hash, save_bibtex_file
 
 
 # Set up logging
@@ -395,6 +395,21 @@ async def add_paper_from_file_tool(arguments: dict) -> list[types.TextContent]:
         tags=custom_tags
     )
 
+    # Save individual BibTeX file
+    bibs_dir = Path(config.get('bibs_output_path', 'data/bibs'))
+    try:
+        bib_file_path = save_bibtex_file(
+            bibtex_entry=metadata.bibtex_entry,
+            bibtex_key=metadata.bibtex_key,
+            output_dir=bibs_dir,
+            pdf_filename=file_path.name
+        )
+        logger.info(f"Saved BibTeX file: {bib_file_path}")
+        bib_saved = True
+    except Exception as e:
+        logger.warning(f"Failed to save BibTeX file: {e}")
+        bib_saved = False
+
     # Get embedding stats
     stats = embedding_generator.get_embedding_stats(embedding_results)
 
@@ -412,6 +427,7 @@ Successfully added paper to database!
 **Indexed:** {num_chunks} chunks
 **Tokens Processed:** {stats['total_tokens']}
 **Estimated Cost:** ${stats['estimated_cost_usd']:.4f}
+{'**BibTeX File:** Saved to ' + str(bibs_dir / (file_path.stem + '.bib')) if bib_saved else '**BibTeX File:** Failed to save'}
 
 The paper is now searchable in your database.
 """

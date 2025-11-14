@@ -8,6 +8,10 @@ Academic RAG Pipeline - A locally-hosted RAG system for academic research paper 
 
 **Key Constraint**: Privacy-first architecture - all PDFs and databases stored locally. Only embedding generation calls external API (OpenAI).
 
+**Output Structure**: For each processed PDF, the system generates:
+- Vector embeddings stored in LanceDB (`data/lancedb/`)
+- Individual BibTeX file in `data/bibs/` (named after the PDF file)
+
 ## Development Setup
 
 ```bash
@@ -95,6 +99,7 @@ python src/mcp_server.py
 - File hashing (SHA256) for duplicate detection
 - Logger setup with file + console output
 - Text cleaning, filename sanitization, timestamp generation
+- `save_bibtex_file()` - Saves individual .bib files to `data/bibs/` directory
 
 ### Configuration Hierarchy
 
@@ -105,6 +110,7 @@ python src/mcp_server.py
 **Critical paths in config**:
 - `pdf_library_path` - Where PDFs are stored
 - `lancedb_path` - Vector database location (default: `./data/lancedb`)
+- `bibs_output_path` - Individual BibTeX files location (default: `./data/bibs`)
 - `openai_api_key` - Required for embeddings
 - `crossref_email` - Polite CrossRef API usage (optional but recommended)
 
@@ -112,11 +118,13 @@ python src/mcp_server.py
 
 Each tool is an async function in `mcp_server.py`:
 1. `search_papers` - Query vector DB, returns formatted results with URLs
-2. `add_paper_from_file` - Full pipeline: process → extract → embed → store
+2. `add_paper_from_file` - Full pipeline: process → extract → embed → store → save .bib file
 3. `generate_bibliography` - Retrieve papers by keys, write .bib file
 4. `get_paper_details` - Fetch paper metadata by BibTeX key
 5. `database_stats` - Aggregate statistics (paper count, year distribution)
 6. `list_recent_papers` - Sort by `date_added` field
+
+**Note**: Tools 2 automatically saves individual .bib files to `data/bibs/` for each processed PDF.
 
 ### Key Dataclasses
 
@@ -168,10 +176,18 @@ ChunkRecord(id, paper_id, text, vector, bibtex_key, bibtex_entry, title, authors
 
 Logs written to `data/logs/`:
 - `mcp_server.log` - MCP server operations
-- `initial_setup.log` - Batch PDF processing
+- `initial_setup.log` - Batch PDF processing (includes BibTeX file save status)
 - Each module uses `setup_logger(__name__)` from `src/utils.py`
 
 Log levels configured in `config.yaml` (`log_level: INFO`)
+
+## Output Files
+
+**Individual BibTeX Files** (`data/bibs/`):
+- Automatically generated for each processed PDF
+- Filename matches PDF filename (e.g., `paper.pdf` → `paper.bib`)
+- Contains single BibTeX entry with metadata extracted via pdf2bib or fallback methods
+- Useful for quick citation access without querying the database
 
 ## Error Handling Patterns
 
