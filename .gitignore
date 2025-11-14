@@ -193,11 +193,18 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
 # Academic RAG Pipeline specific
 # Exclude data directory (contains PDFs and database)
 data/lancedb/
 data/pdfs/
 data/logs/
+**/data/lancedb/
+*.txn
 
 # Exclude generated bibliography files
 *.bib

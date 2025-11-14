@@ -45,9 +45,16 @@ def load_config() -> dict:
     if config is not None:
         return config
 
+    # Determine project root (parent of src directory)
+    project_root = Path(__file__).parent.parent.resolve()
+
     # Get config path from environment or use default
     config_path = os.getenv('CONFIG_PATH', 'config/config.yaml')
     config_file = Path(config_path)
+
+    # If config path is relative, resolve it from project root
+    if not config_file.is_absolute():
+        config_file = project_root / config_file
 
     if not config_file.exists():
         logger.error(f"Config file not found: {config_file}")
@@ -56,11 +63,20 @@ def load_config() -> dict:
     with open(config_file, 'r') as f:
         config = yaml.safe_load(f)
 
+    # Resolve relative paths in config to project root
+    for path_key in ['lancedb_path', 'pdf_library_path', 'default_bib_output']:
+        if path_key in config and config[path_key]:
+            path_value = Path(config[path_key])
+            if not path_value.is_absolute():
+                config[path_key] = str(project_root / path_value)
+
     # Override with environment variables
     config['openai_api_key'] = os.getenv('OPENAI_API_KEY', config.get('openai_api_key', ''))
     config['crossref_email'] = os.getenv('CROSSREF_EMAIL', config.get('crossref_email', ''))
 
-    logger.info("Configuration loaded successfully")
+    logger.info(f"Configuration loaded successfully from {config_file}")
+    logger.info(f"Project root: {project_root}")
+    logger.info(f"LanceDB path: {config.get('lancedb_path')}")
     return config
 
 
@@ -129,18 +145,16 @@ async def handle_list_tools() -> list[types.Tool]:
                     },
                     "n_results": {
                         "type": "integer",
-                        "description": "Number of results to return (1-20)",
+                        "description": "Number of results to return (1-20, default: 5)",
                         "default": 5
                     },
                     "filter_section": {
                         "type": "string",
-                        "description": "Filter by section type (Methods, Results, Discussion, Introduction)",
-                        "default": None
+                        "description": "Filter by section type (Methods, Results, Discussion, Introduction). Optional."
                     },
                     "min_year": {
                         "type": "integer",
-                        "description": "Only papers from this year onwards",
-                        "default": None
+                        "description": "Only papers from this year onwards. Optional."
                     }
                 },
                 "required": ["query"]
