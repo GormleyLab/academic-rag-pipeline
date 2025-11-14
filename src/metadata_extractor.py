@@ -13,6 +13,12 @@ import requests
 import fitz  # PyMuPDF
 from pybtex.database import parse_string as parse_bibtex
 
+try:
+    import pdf2bib
+    PDF2BIB_AVAILABLE = True
+except ImportError:
+    PDF2BIB_AVAILABLE = False
+
 from src.utils import (
     setup_logger,
     extract_doi_from_text,
@@ -27,6 +33,7 @@ logger = setup_logger(__name__)
 
 class ExtractionMethod(Enum):
     """Enumeration of metadata extraction methods."""
+    PDF2BIB = "pdf2bib"
     CROSSREF = "crossref"
     ARXIV = "arxiv"
     PUBMED = "pubmed"
@@ -82,7 +89,13 @@ class MetadataExtractor:
                 'User-Agent': f'AcademicRAG/1.0 (mailto:{crossref_email})'
             })
 
-        logger.info("MetadataExtractor initialized")
+        # Configure pdf2bib if available
+        if PDF2BIB_AVAILABLE:
+            pdf2bib.config.set('verbose', False)  # Set to True for debugging
+            logger.info("MetadataExtractor initialized with pdf2bib support")
+        else:
+            logger.warning("pdf2bib not available - install with 'pip install pdf2bib'")
+            logger.info("MetadataExtractor initialized without pdf2bib support")
 
     def extract_metadata(
         self,
@@ -109,7 +122,13 @@ class MetadataExtractor:
 
         logger.info(f"Extracting metadata from: {pdf_path.name}")
 
-        # Strategy 1: Try DOI + CrossRef
+        # Strategy 1: Try pdf2bib (extracts DOI/arXiv directly from PDF and fetches metadata)
+        if PDF2BIB_AVAILABLE:
+            metadata = self._get_metadata_from_pdf2bib(pdf_path, existing_keys)
+            if metadata:
+                return metadata
+
+        # Strategy 2: Try DOI + CrossRef (from text extraction)
         if first_pages_text:
             doi = extract_doi_from_text(first_pages_text)
             if doi:
@@ -118,7 +137,7 @@ class MetadataExtractor:
                 if metadata:
                     return metadata
 
-        # Strategy 2: Try arXiv
+        # Strategy 3: Try arXiv
         if first_pages_text:
             arxiv_id = extract_arxiv_id_from_text(first_pages_text)
             if arxiv_id:
@@ -127,7 +146,7 @@ class MetadataExtractor:
                 if metadata:
                     return metadata
 
-        # Strategy 3: Try PubMed
+        # Strategy 4: Try PubMed
         if first_pages_text:
             pmid = extract_pubmed_id_from_text(first_pages_text)
             if pmid:
@@ -136,14 +155,114 @@ class MetadataExtractor:
                 if metadata:
                     return metadata
 
-        # Strategy 4: Try PDF metadata
+        # Strategy 5: Try PDF metadata
         metadata = self._extract_from_pdf_metadata(pdf_path, existing_keys)
         if metadata:
             return metadata
 
-        # Strategy 5: Parse document text
+        # Strategy 6: Parse document text
         logger.warning(f"Using document parsing for {pdf_path.name} (may be incomplete)")
         return self._parse_metadata_from_text(first_pages_text or "", pdf_path, existing_keys)
+
+    def _get_metadata_from_pdf2bib(
+        self,
+        pdf_path: Path,
+        existing_keys: set[str]
+    ) -> Optional[PaperMetadata]:
+        """
+        Extract metadata using pdf2bib library.
+
+        pdf2bib extracts identifiers (DOI, arXiv, etc.) directly from the PDF
+        and fetches metadata from appropriate sources.
+
+        Args:
+            pdf_path: Path to PDF file
+            existing_keys: Set of existing BibTeX keys
+
+        Returns:
+            PaperMetadata if successful, None otherwise
+        """
+        try:
+            logger.info(f"Attempting pdf2bib extraction for: {pdf_path.name}")
+
+            # Call pdf2bib to extract identifier and fetch metadata
+            result = pdf2bib.pdf2bib(str(pdf_path))
+
+            # Handle result format (can be dict with file path as key or direct result)
+            if isinstance(result, dict):
+                # Check if this is a direct result (has 'identifier' key)
+                # or a dict of results (file paths as keys)
+                if 'identifier' in result:
+                    pdf_result = result
+                elif str(pdf_path) in result:
+                    pdf_result = result[str(pdf_path)]
+                else:
+                    logger.warning(f"pdf2bib returned unexpected result format for {pdf_path.name}")
+                    return None
+            else:
+                logger.warning(f"pdf2bib returned unexpected type: {type(result)}")
+                return None
+
+            # Check if identifier was found
+            identifier = pdf_result.get('identifier')
+            if not identifier:
+                logger.info(f"pdf2bib could not find identifier in {pdf_path.name}")
+                return None
+
+            identifier_type = pdf_result.get('identifier_type', 'unknown')
+            logger.info(f"pdf2bib found {identifier_type}: {identifier}")
+
+            # Get BibTeX from the result
+            bibtex_entry = pdf_result.get('bibtex')
+            if not bibtex_entry:
+                logger.warning(f"pdf2bib found identifier but no BibTeX data for {pdf_path.name}")
+                return None
+
+            # Parse BibTeX to extract fields
+            parsed = self._parse_bibtex_entry(bibtex_entry)
+            if not parsed:
+                logger.warning(f"Failed to parse BibTeX from pdf2bib for {pdf_path.name}")
+                return None
+
+            # Generate proper BibTeX key
+            bibtex_key = generate_bibtex_key(
+                parsed['authors'],
+                parsed['year'],
+                existing_keys
+            )
+
+            # Replace the key in the BibTeX entry
+            bibtex_entry = self._replace_bibtex_key(bibtex_entry, bibtex_key)
+
+            # Determine DOI and URL
+            doi = parsed.get('doi') or (identifier if identifier_type == 'doi' else None)
+
+            # Construct URL based on identifier type
+            if doi:
+                url_link = f"https://doi.org/{doi}"
+            elif identifier_type == 'arxiv':
+                url_link = f"https://arxiv.org/abs/{identifier}"
+            else:
+                url_link = pdf_result.get('url')
+
+            return PaperMetadata(
+                title=parsed['title'],
+                authors=parsed['authors'],
+                year=parsed['year'],
+                bibtex_key=bibtex_key,
+                bibtex_entry=bibtex_entry,
+                journal=parsed.get('journal'),
+                volume=parsed.get('volume'),
+                pages=parsed.get('pages'),
+                doi=doi,
+                url=url_link,
+                publisher=parsed.get('publisher'),
+                extraction_method=ExtractionMethod.PDF2BIB
+            )
+
+        except Exception as e:
+            logger.warning(f"pdf2bib extraction failed for {pdf_path.name}: {e}")
+            return None
 
     def _get_metadata_from_crossref(
         self,

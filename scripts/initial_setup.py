@@ -21,7 +21,7 @@ from src.document_processor import DocumentProcessor
 from src.metadata_extractor import MetadataExtractor
 from src.embeddings import EmbeddingGenerator
 from src.vector_store import VectorStore
-from src.utils import setup_logger, find_pdf_files, compute_file_hash
+from src.utils import setup_logger, find_pdf_files, compute_file_hash, save_bibtex_file
 
 
 console = Console()
@@ -114,6 +114,11 @@ def process_pdf_library(config, doc_processor, metadata_extractor, embedding_gen
         console.print(f"[bold red]Error: PDF library path not found: {pdf_library_path}[/bold red]")
         sys.exit(1)
 
+    # Set up bibs directory
+    bibs_dir = Path(config.get('bibs_output_path', 'data/bibs'))
+    bibs_dir.mkdir(parents=True, exist_ok=True)
+    logger.info(f"BibTeX files will be saved to: {bibs_dir}")
+
     # Find all PDFs
     console.print(f"\n[bold blue]Scanning for PDFs in: {pdf_library_path}[/bold blue]")
     pdf_files = find_pdf_files(pdf_library_path, recursive=True)
@@ -186,6 +191,18 @@ def process_pdf_library(config, doc_processor, metadata_extractor, embedding_gen
                     pdf_path=pdf_path,
                     pdf_hash=pdf_hash
                 )
+
+                # Save individual BibTeX file
+                try:
+                    bib_file_path = save_bibtex_file(
+                        bibtex_entry=metadata.bibtex_entry,
+                        bibtex_key=metadata.bibtex_key,
+                        output_dir=bibs_dir,
+                        pdf_filename=pdf_path.name
+                    )
+                    logger.info(f"Saved BibTeX file: {bib_file_path.name}")
+                except Exception as e:
+                    logger.warning(f"Failed to save BibTeX file for {pdf_path.name}: {e}")
 
                 processed += 1
                 logger.info(f"Successfully processed: {pdf_path.name} ({metadata.bibtex_key})")

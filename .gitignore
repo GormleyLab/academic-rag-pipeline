@@ -203,11 +203,12 @@ cython_debug/
 data/lancedb/
 data/pdfs/
 data/logs/
+data/bibs/
 **/data/lancedb/
 *.txn
 
-# Exclude generated bibliography files
-*.bib
+# Exclude generated bibliography files (but not the bibs/ folder structure)
+# Individual .bib files in bibs/ are ignored via data/bibs/ above
 
 # Exclude environment file (contains API keys)
 .env

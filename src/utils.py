@@ -75,6 +75,11 @@ def extract_doi_from_text(text: str) -> Optional[str]:
     """
     Extract DOI from text using regex patterns.
 
+    NOTE: This is a fallback method. The primary DOI extraction is handled by
+    pdf2bib in metadata_extractor.py, which extracts identifiers directly from
+    PDF binary content and is more reliable. This text-based extraction is used
+    only when pdf2bib is not available or fails.
+
     Args:
         text: Text to search for DOI
 
@@ -105,6 +110,10 @@ def extract_arxiv_id_from_text(text: str) -> Optional[str]:
     """
     Extract arXiv ID from text.
 
+    NOTE: This is a fallback method. The primary arXiv ID extraction is handled by
+    pdf2bib in metadata_extractor.py. This text-based extraction is used only when
+    pdf2bib is not available or fails.
+
     Args:
         text: Text to search for arXiv ID
 
@@ -128,6 +137,10 @@ def extract_arxiv_id_from_text(text: str) -> Optional[str]:
 def extract_pubmed_id_from_text(text: str) -> Optional[str]:
     """
     Extract PubMed ID from text.
+
+    NOTE: This is a fallback method. The primary PMID extraction is handled by
+    pdf2bib in metadata_extractor.py. This text-based extraction is used only when
+    pdf2bib is not available or fails.
 
     Args:
         text: Text to search for PMID
@@ -294,3 +307,40 @@ def sanitize_filename(filename: str) -> str:
         filename = filename[:255]
 
     return filename
+
+
+def save_bibtex_file(bibtex_entry: str, bibtex_key: str, output_dir: Path, pdf_filename: Optional[str] = None) -> Path:
+    """
+    Save a BibTeX entry to an individual .bib file.
+
+    Args:
+        bibtex_entry: The BibTeX entry string to save
+        bibtex_key: The BibTeX citation key (e.g., "Smith2024")
+        output_dir: Directory where .bib files should be saved
+        pdf_filename: Optional PDF filename to use as base (without extension)
+
+    Returns:
+        Path to the saved .bib file
+    """
+    # Create output directory if it doesn't exist
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Determine filename: use PDF filename if provided, otherwise use bibtex_key
+    if pdf_filename:
+        # Remove .pdf extension if present
+        base_name = pdf_filename.replace('.pdf', '').replace('.PDF', '')
+    else:
+        base_name = bibtex_key
+
+    # Sanitize the filename
+    base_name = sanitize_filename(base_name)
+
+    # Create .bib file path
+    bib_path = output_dir / f"{base_name}.bib"
+
+    # Write BibTeX entry
+    with open(bib_path, 'w', encoding='utf-8') as f:
+        f.write(bibtex_entry)
+        f.write('\n')  # Add trailing newline
+
+    return bib_path

@@ -17,6 +17,7 @@ mcp>=0.9.0
 # Citation Metadata
 requests>=2.31.0
 pybtex>=0.24.0
+pdf2bib>=1.0.0
 
 # PDF Processing
 pymupdf>=1.23.0
