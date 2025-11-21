@@ -9,9 +9,13 @@ import sys
 from pathlib import Path
 import yaml
 import logging
+import warnings
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+
+# Suppress resource tracker warnings from multiprocessing (used internally by Docling)
+warnings.filterwarnings('ignore', category=UserWarning, module='multiprocessing.resource_tracker')
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -259,10 +263,18 @@ def main():
     # Initialize components
     doc_processor, metadata_extractor, embedding_generator, vector_store, logger = initialize_components(config)
 
-    # Process PDF library
-    process_pdf_library(config, doc_processor, metadata_extractor, embedding_generator, vector_store, logger)
+    try:
+        # Process PDF library
+        process_pdf_library(config, doc_processor, metadata_extractor, embedding_generator, vector_store, logger)
 
-    console.print("\n[bold green]Setup complete! You can now use the MCP server with Claude Desktop.[/bold green]\n")
+        console.print("\n[bold green]Setup complete! You can now use the MCP server with Claude Desktop.[/bold green]\n")
+    finally:
+        # Explicit cleanup to prevent resource leaks
+        logger.info("Cleaning up resources...")
+        del doc_processor
+        del metadata_extractor
+        del embedding_generator
+        del vector_store
 
 
 if __name__ == "__main__":

@@ -73,6 +73,18 @@ class DocumentProcessor:
             f"overlap={chunk_overlap}, model={embedding_model}"
         )
 
+    def __del__(self):
+        """Cleanup resources when the processor is destroyed."""
+        try:
+            # Close the converter if it has cleanup methods
+            if hasattr(self.converter, 'close'):
+                self.converter.close()
+            elif hasattr(self.converter, '__del__'):
+                del self.converter
+        except Exception as e:
+            # Suppress errors during cleanup to avoid issues at interpreter shutdown
+            pass
+
     def process_pdf(self, pdf_path: Path) -> tuple[DoclingDocument, list[DocumentChunk]]:
         """
         Process a PDF file into a structured document and chunks.
