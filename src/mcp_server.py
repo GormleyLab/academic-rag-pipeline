@@ -353,12 +353,7 @@ async def search_papers_tool(arguments: dict) -> list[types.TextContent]:
             f"Page {result['page_number'] or 'N/A'}):"
         )
 
-        # Truncate text if too long
-        text = result['text']
-        if len(text) > 500:
-            text = text[:500] + "..."
-
-        output_lines.append(text)
+        output_lines.append(result['text'])
         output_lines.append("\n---\n")
 
     return [types.TextContent(
