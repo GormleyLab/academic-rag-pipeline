@@ -155,6 +155,12 @@ async def handle_list_tools() -> list[types.Tool]:
                     "min_year": {
                         "type": "integer",
                         "description": "Only papers from this year onwards. Optional."
+                    },
+                    "output_format": {
+                        "type": "string",
+                        "enum": ["text", "json"],
+                        "description": "Output format: 'text' for human-readable (default), 'json' for structured data",
+                        "default": "text"
                     }
                 },
                 "required": ["query"]
@@ -306,10 +312,13 @@ async def handle_call_tool(
 
 async def search_papers_tool(arguments: dict) -> list[types.TextContent]:
     """Search for papers in the database."""
+    import json
+
     query = arguments.get("query")
     n_results = arguments.get("n_results", 5)
     filter_section = arguments.get("filter_section")
     min_year = arguments.get("min_year")
+    output_format = arguments.get("output_format", "text")
 
     logger.info(f"Searching for: {query}")
 
@@ -324,13 +333,54 @@ async def search_papers_tool(arguments: dict) -> list[types.TextContent]:
         min_year=min_year
     )
 
-    # Format results
+    # Handle no results
     if not results:
+        if output_format == "json":
+            return [types.TextContent(
+                type="text",
+                text=json.dumps({"results": [], "query": query, "count": 0})
+            )]
         return [types.TextContent(
             type="text",
             text="No results found for your query."
         )]
 
+    # JSON format for programmatic access
+    if output_format == "json":
+        json_results = []
+        for result in results:
+            # Parse authors string into list
+            authors_list = [a.strip() for a in result['authors'].split(',') if a.strip()]
+
+            # Extract DOI from URL if available
+            doi = None
+            if result.get('url') and 'doi.org/' in result['url']:
+                doi = result['url'].split('doi.org/')[-1]
+
+            json_results.append({
+                "title": result['title'],
+                "authors": authors_list,
+                "year": result['year'],
+                "journal": result.get('journal'),
+                "doi": doi,
+                "url": result.get('url'),
+                "bibtex_key": result['bibtex_key'],
+                "abstract": result.get('text', '')[:500],  # First 500 chars as abstract proxy
+                "relevance_score": result.get('_distance', 0.5),
+                "section": result.get('section_title'),
+                "page": result.get('page_number')
+            })
+
+        return [types.TextContent(
+            type="text",
+            text=json.dumps({
+                "results": json_results,
+                "query": query,
+                "count": len(json_results)
+            })
+        )]
+
+    # Text format (default) for human-readable output
     output_lines = [f"Found {len(results)} relevant papers:\n"]
 
     for i, result in enumerate(results, 1):
